@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "TEMU SKU 备货计算器",
+  "version": "2.0.0",
+  "description": "批量读取TEMU销售管理页面SKU数据，跨页累计，自动计算备货数量，告别手动计算",
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel"],
+  "host_permissions": [
+    "*://*.kuajingmaihuo.com/*",
+    "*://*.temu.com/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "action": {
+    "default_title": "打开 SKU 备货计算器"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.kuajingmaihuo.com/*",
+        "*://*.temu.com/*"
+      ],
+      "js": ["content/scraper.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

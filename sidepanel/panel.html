@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEMU SKU 备货计算器</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-left">
+        <span class="header-icon">📦</span>
+        <div>
+          <h1 class="header-title">SKU 备货计算器</h1>
+          <p class="header-sub">TEMU 销售管理 · 跨页累计备货分析</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <span id="statusBadge" class="status-badge ready">就绪</span>
+      </div>
+    </header>
+
+    <!-- ── 跨页进度横幅 ── -->
+    <div class="progress-banner" id="progressBanner" style="display:none;">
+      <div class="progress-left">
+        <span class="progress-icon">🗂️</span>
+        <span>已累计 <strong id="pageCount">0</strong> 页 &nbsp;·&nbsp; <strong id="totalSkuCount">0</strong> 个 SKU</span>
+      </div>
+      <button id="clearBtn" class="btn-clear" title="清空数据重新开始">🗑️ 清空</button>
+    </div>
+
+    <!-- ── 设置面板 ── -->
+    <section class="settings-panel">
+      <div class="settings-row">
+        <div class="setting-item">
+          <label class="setting-label">🎯 目标备货天数</label>
+          <div class="number-input-group">
+            <button class="num-btn" data-target="targetDays" data-delta="-1">−</button>
+            <input type="number" id="targetDays" class="number-input" value="7" min="3" max="30">
+            <button class="num-btn" data-target="targetDays" data-delta="1">+</button>
+          </div>
+          <span class="unit">天</span>
+        </div>
+        <div class="setting-item">
+          <label class="setting-label">🛡️ 安全库存天数</label>
+          <div class="number-input-group">
+            <button class="num-btn" data-target="safetyDays" data-delta="-1">−</button>
+            <input type="number" id="safetyDays" class="number-input" value="3" min="0" max="5">
+            <button class="num-btn" data-target="safetyDays" data-delta="1">+</button>
+          </div>
+          <span class="unit">天</span>
+        </div>
+      </div>
+      <div class="settings-row settings-row-check">
+        <label class="check-label">
+          <input type="checkbox" id="includeInTransit" checked>
+          <span class="check-box"></span>
+          <span>含已发货在途库存</span>
+        </label>
+        <label class="check-label">
+          <input type="checkbox" id="showOnlyNeedStock">
+          <span class="check-box"></span>
+          <span>只显示需要备货的 SKU</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ── 公式提示 ── -->
+    <div class="formula-hint">
+      <span class="formula-label">当前公式：</span>
+      <span id="formulaText">建议备货 = max(0, 日均 × 60天 − 当前库存)</span>
+    </div>
+
+    <!-- ── 操作栏 ── -->
+    <div class="action-bar">
+      <button id="scrapeBtn" class="btn-primary">
+        <span class="btn-icon">🔍</span>
+        <span id="scrapeBtnText">读取当前页</span>
+      </button>
+      <div class="action-right">
+        <span id="skuCount" class="sku-count"></span>
+        <button id="exportBtn" class="btn-secondary" disabled>
+          <span>📥 导出 CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── 结果表格 ── -->
+    <div class="results-container">
+
+      <!-- 空状态 -->
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">📋</div>
+        <p class="empty-title">请先打开 TEMU 销售管理页面</p>
+        <p class="empty-sub">等页面完全加载后，点击「读取当前页」按钮</p>
+        <p class="empty-tip">💡 翻到下一页后再次点击，即可跨页累计数据</p>
+      </div>
+
+      <!-- 错误状态 -->
+      <div class="error-state" id="errorState" style="display:none;">
+        <div class="error-icon">⚠️</div>
+        <p id="errorMsg"></p>
+        <p class="error-sub" id="errorSub"></p>
+      </div>
+
+      <!-- 表格 -->
+      <div id="tableWrapper" class="table-wrapper" style="display:none;">
+        <table class="results-table" id="resultsTable">
+          <thead>
+            <tr>
+              <th>SKC</th>
+              <th>SKU货号</th>
+              <th>颜色/尺码</th>
+              <th class="num-col">近7天</th>
+              <th class="num-col">近30天</th>
+              <th class="num-col">日均销量</th>
+              <th class="num-col">可用库存</th>
+              <th class="num-col">暂不可用</th>
+              <th class="num-col">在途/已发</th>
+              <th class="num-col">剩余天数</th>
+              <th class="num-col">目标总量</th>
+              <th class="num-col highlight-col">建议备货</th>
+              <th class="status-col">状态</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── 汇总栏 ── -->
+    <div class="summary-bar" id="summaryBar" style="display:none;">
+      <div class="summary-item">
+        <span class="summary-num" id="sumTotal">0</span>
+        <span class="summary-label">SKU总数</span>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item danger-item">
+        <span class="summary-num" id="sumNeedStock">0</span>
+        <span class="summary-label">需要备货</span>
+      </div>
+      <div class="summary-item warn-item">
+        <span class="summary-num" id="sumWarn">0</span>
+        <span class="summary-label">库存偏低</span>
+      </div>
+      <div class="summary-item safe-item">
+        <span class="summary-num" id="sumSafe">0</span>
+        <span class="summary-label">库存充足</span>
+      </div>
+      <div class="summary-divider"></div>
+      <div class="summary-item accent-item">
+        <span class="summary-num" id="sumTotalStock">0</span>
+        <span class="summary-label">建议备货总量</span>
+      </div>
+    </div>
+
+  </div>
+  <script src="panel.js"></script>
+</body>
+</html>
