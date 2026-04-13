@@ -370,6 +370,15 @@ body {
   color: var(--text-primary);
   vertical-align: middle;
 }
+.results-table th.skc-col {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: #0f111c;
+  border-right: 1px solid var(--border);
+  min-width: 90px;
+  max-width: 100px;
+}
 .results-table td.sku-code {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 11px;
@@ -380,9 +389,15 @@ body {
   white-space: nowrap;
 }
 .results-table td.sku-code.skc-group {
+  position: sticky;
+  left: 0;
+  z-index: 15;
   vertical-align: middle;
   background-color: var(--bg-primary); /* 覆盖斑马线，保持纯色底 */
   border-right: 1px solid var(--border); /* 形成整块框的右边界 */
+  max-width: 100px; /* 收窄宽度 */
+  white-space: normal; /* 允许换行 */
+  word-break: break-all; /* 确保长货号换行 */
 }
 .results-table td.sku-name {
   font-weight: 500;
